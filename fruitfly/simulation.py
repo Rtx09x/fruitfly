@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 
 class ConnectomeSimulation:
@@ -20,6 +21,9 @@ class ConnectomeSimulation:
         self.pre = np.load(cache / "pre.npy", mmap_mode="r")
         self.post = np.load(cache / "post.npy", mmap_mode="r")
         self.weight = np.load(cache / "weights.npy", mmap_mode="r")
+        # Sum equivalent parallel edges once; preserve every signed contribution.
+        n = self.manifest["neurons"]
+        self.connectivity = csr_matrix((self.weight, (self.post, self.pre)), shape=(n, n))
         self.side = np.load(cache / "side.npy", mmap_mode="r")
         self.motion = np.load(cache / "visual_motion.npy", mmap_mode="r")
         self.objects = np.load(cache / "visual_object.npy", mmap_mode="r")
@@ -41,13 +45,15 @@ class ConnectomeSimulation:
         self.last_step_ms = 0.0
         self.dt_ms = 5.0
         self.lock = threading.Lock()
+        self.shown = np.linspace(0, n - 1, 1800, dtype=np.int64)
+        self.motion_left = self.motion & (self.side < 0)
+        self.motion_right = self.motion & (self.side > 0)
 
     def step(self):
         t0 = time.perf_counter()
         # Sparse event propagation: all anatomical edges are represented; only
         # edges from currently spiking presynaptic neurons contribute this tick.
-        currents = np.bincount(self.post, weights=self.weight * self.spikes[self.pre],
-                               minlength=len(self.v)).astype(np.float32)
+        currents = self.connectivity @ self.spikes
         np.tanh(currents / 80.0, out=currents)
         drive = self.rng.normal(.025, .035, len(self.v)).astype(np.float32)
         with self.lock:
@@ -60,8 +66,8 @@ class ConnectomeSimulation:
             mr = min(1.0, self.stimulus["manual_right"] + self.stimulus["camera_right"])
             loom = self.stimulus["manual_loom"]
             audio = self.stimulus["audio"]
-        drive[self.motion & (self.side < 0)] += ml * .28
-        drive[self.motion & (self.side > 0)] += mr * .28
+        drive[self.motion_left] += ml * .28
+        drive[self.motion_right] += mr * .28
         drive[self.objects] += loom * .32
         drive[self.auditory] += audio * .30
         self.v = self.v * .92 + currents * .20 + drive
@@ -89,12 +95,15 @@ class ConnectomeSimulation:
         turn = 0.0 if abs(rm - lm) < .001 else max(-1.0, min(1.0, (rm - lm) * 10.0))
         # Stable anatomical sample for display; positions are real coordinates,
         # while color is the computed per-neuron activity. This is not parcellation.
-        shown = np.linspace(0, len(self.rate) - 1, 900, dtype=np.int64)
-        points = np.column_stack((self.xyz[shown, 0], self.xyz[shown, 1], self.rate[shown]))
+        shown = self.shown
+        points = np.column_stack((self.xyz[shown], self.rate[shown]))
         return {"tick": self.tick, "step_ms": round(self.last_step_ms, 1), "sim_hz": round(self.hz, 2),
                 "active": int(self.spikes.sum()), "mean_rate": float(self.rate.mean()),
                 "motor": {"left": lm, "right": rm, "speed": speed, "turn": turn},
                 "points": points.round(4).tolist(), "paused": self.paused,
+                "populations": {"vision": float(self.rate[self.motion].mean()),
+                                "sound": float(self.rate[self.auditory].mean()),
+                                "output": (lm + rm) / 2},
                 "stimulus": {**stimulus, "total_left": total_left, "total_right": total_right},
                 "dt_ms": self.dt_ms, "simulated_ms": self.tick * self.dt_ms,
                 "realtime_factor": round(self.dt_ms / max(self.last_step_ms, .001), 3),

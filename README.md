@@ -1,5 +1,13 @@
 # Fruitfly Connectome Lab
 
+## Latest demo update
+
+The arena now leads the page, with a perspective-projected fly model, a movement trail and camera-relative direction indicator. Camera preview is picture-in-picture at the bottom right; camera and microphone use icon controls. The rotating brain view displays 1,800 sampled neurons in their real 3D coordinates. Rotation is a presentation effect; color reports computed neural activity. Direction is the avatar's heading, not evidence of attraction or avoidance.
+
+The full network now uses SciPy compressed sparse matrix multiplication, retaining all signed connection contributions. A local 100-step trial took about 1.1–1.3 seconds versus approximately 8 seconds previously; speed on your Mac still needs measurement. Pull this branch and rerun the launcher to install the new SciPy dependency, then restart the server and refresh the browser.
+
+Food recognition and sound-specific biological behavior are not implemented. The webcam detects movement and the microphone measures sound energy; neither identifies food or mating calls. Movement continues to come only from simulated motor output.
+
 An honest, local buildathon demo that runs a simplified leaky integrate-and-fire (LIF) simulation across the **complete connectivity table in this repository** and uses the computed activity to drive a browser visualization and a deliberately simple fly avatar.
 
 ## Run

@@ -10,9 +10,11 @@ CACHE = build(Path("fruit_fly_brain_dataset"))
 def trial(stimulated=True, silenced=False, disconnected=False, steps=100):
     sim = ConnectomeSimulation(CACHE, seed=1)
     if silenced:
-        sim.motion = sim.motion & False
+        sim.motion_left = sim.motion_left & False
+        sim.motion_right = sim.motion_right & False
     if disconnected:
         sim.weight = np.zeros_like(sim.weight)
+        sim.connectivity.data[:] = 0
     left, right = [], []
     started = perf_counter()
     for tick in range(steps):
