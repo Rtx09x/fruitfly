@@ -13,6 +13,7 @@ import numpy as np
 
 NT_SIGN = {"ACH": 1.0, "OCT": 1.0, "DA": 1.0, "SER": 1.0,
            "GABA": -1.0, "GLUT": -1.0}
+CACHE_VERSION = 2
 
 
 def _rows(path: Path):
@@ -38,7 +39,7 @@ def build(data_dir: Path, force: bool = False) -> Path:
         fingerprint[name] = {"bytes": path.stat().st_size, "sha256": digest.hexdigest()}
     if manifest_path.exists() and not force:
         old = json.loads(manifest_path.read_text(encoding="utf-8"))
-        if old.get("source_fingerprint") == fingerprint:
+        if old.get("source_fingerprint") == fingerprint and old.get("cache_version") == CACHE_VERSION:
             return cache
     cache.mkdir(exist_ok=True)
     started = time.perf_counter()
@@ -68,6 +69,7 @@ def build(data_dir: Path, force: bool = False) -> Path:
     side = np.zeros(len(ids), dtype=np.int8)  # -1 left, +1 right
     visual_motion = np.zeros(len(ids), dtype=np.bool_)
     visual_object = np.zeros(len(ids), dtype=np.bool_)
+    auditory = np.zeros(len(ids), dtype=np.bool_)
     motor = np.zeros(len(ids), dtype=np.bool_)
     labels = []
     for i, root in enumerate(ids):
@@ -77,6 +79,7 @@ def build(data_dir: Path, force: bool = False) -> Path:
         side[i] = -1 if s == "left" else (1 if s == "right" else 0)
         visual_motion[i] = vis.get("subsystem", "").lower() == "motion"
         visual_object[i] = vis.get("subsystem", "").lower() == "object"
+        auditory[i] = cls.get("flow") == "afferent" and cls.get("class") == "mechanosensory" and cls.get("sub_class") == "auditory"
         motor[i] = cls.get("flow") == "efferent"
         if len(labels) < 500 and (visual_motion[i] or motor[i]):
             labels.append({"index": i, "root_id": rid, "class": cls.get("class", ""),
@@ -84,6 +87,7 @@ def build(data_dir: Path, force: bool = False) -> Path:
     np.save(cache / "side.npy", side)
     np.save(cache / "visual_motion.npy", visual_motion)
     np.save(cache / "visual_object.npy", visual_object)
+    np.save(cache / "auditory.npy", auditory)
     np.save(cache / "motor.npy", motor)
 
     # Count first so files are allocated once. Every CSV edge is retained.
@@ -106,8 +110,9 @@ def build(data_dir: Path, force: bool = False) -> Path:
         # simplified here and are explicitly documented as an assumption.
         weights[j] = syn * NT_SIGN.get(row["nt_type"] or nt_by_id.get(int(row["pre_root_id"]), ""), 1.0)
     pre.flush(); post.flush(); weights.flush()
-    manifest = {"neurons": len(ids), "edges": edge_count, "unmapped_edges": unknown,
+    manifest = {"cache_version": CACHE_VERSION, "neurons": len(ids), "edges": edge_count, "unmapped_edges": unknown,
                 "motion_inputs": int(visual_motion.sum()), "object_inputs": int(visual_object.sum()),
+                "auditory_inputs": int(auditory.sum()),
                 "motor_outputs": int(motor.sum()), "build_seconds": time.perf_counter() - started,
                 "source_files": required, "source_fingerprint": fingerprint, "labels": labels,
                 "coordinate_note": "first listed coordinate per root; 1st–99th percentile normalized"}

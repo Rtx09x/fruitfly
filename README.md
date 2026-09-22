@@ -28,7 +28,9 @@ Or: `python -m pip install -r requirements.txt && python run.py`. Open <http://1
 - Synapse count controls magnitude. Dataset transmitter labels provide the sign: ACh/OCT/DA/SER are treated as excitatory and GABA/GLUT as inhibitory. This is a simplification; receptor-specific effects are unavailable.
 - Neurons use a discrete current-based LIF-like update at a documented 5 ms timestep. This lightweight interactive model is **inspired by, not a numerical reproduction of**, Shiu et al.'s published whole-brain LIF model. It omits their alpha-synapse dynamics, delays, refractory period, calibrated membrane units, and validated sensory experiments.
 - Manual motion and looming controls inject current into neurons bearing the dataset's `Motion` and `Object` visual subsystem annotations. The mapping and amplitude are assumptions.
-- The opt-in webcam adapter computes coarse left/right frame differences locally in the browser and maps them to the same motion controls. It does not classify food, faces, or behavior, and no frames are uploaded.
+- The opt-in camera adapter computes coarse left/right frame differences locally in the browser and maps them to the same motion controls. It does not classify food, faces, or behavior, and no frames are uploaded.
+- The opt-in microphone adapter computes RMS amplitude and a displayed zero-crossing feature locally. RMS becomes current in the 393 neurons explicitly annotated `flow=afferent`, `class=mechanosensory`, `sub_class=auditory`. This is a generic sound-energy adapter, not a reproduction of fly hearing or courtship-song selectivity; audio is never recorded or uploaded.
+- Manual, camera, and microphone sources have separate state. Camera motion adds to manual visual input (clamped at 1), while microphone drives only the auditory mask. Per-source sequence numbers reject late requests, and device input expires after 750 ms without a heartbeat.
 - The fly avatar's speed is the mean bilateral efferent firing rate and turn is the left/right difference, with fixed gains in `simulation.py`. This is an explicitly heuristic motor decoder, not a validated muscle or behavior circuit.
 - The activity view shows a stable sample of 900 neurons at their real x/y coordinates (first coordinate per root, percentile-normalized). Color is computed per-neuron activity. It is not an anatomical parcellation.
 
@@ -44,10 +46,11 @@ On the provided Intel i3-1315U / 8 GB Windows laptop with NumPy 2.3.5:
 - Left-heavy motion injection from step 20: peak left efferent rate 0.087 spikes/s versus right 0 in this deterministic seed-1 run.
 - The same injected values with annotated motion inputs silenced: peak efferent rate 0 spikes/s.
 - The motion/efferent annotation masks overlap at 0 neurons; with identical stimulus and every edge weight zero, peak efferent rate is also 0 spikes/s (2,168 stimulated input neurons were active at the final step).
+- A deterministic seed-2, 100-step full-strength auditory-input trial uses 393 annotated auditory afferents (0 overlapping efferents) and measured a 0.416 spikes/s peak efferent rate. This is a connectivity response to generic amplitude drive, not evidence of hearing, song recognition, or behavior.
 
 Run `python benchmark.py` to reproduce four 100-step trials: baseline, stimulus, the same stimulus with annotated motion inputs silenced, and with all edge weights zero. The controls distinguish downstream connectivity effects from a scripted avatar reaction. The script also verifies that annotated motion and efferent masks do not overlap. Results can differ if model parameters or data change.
 
-Run `python -m unittest discover -v` for structural and stepping checks. `node --check fruitfly/static/app.js` performs a JavaScript syntax check.
+Run `python -m unittest discover -s tests -v` for structural, stepping, input-mixing, and auditory-drive checks. `node --check fruitfly/static/app.js` and `node tests/test_media_features.js` check browser code and deterministic camera/audio feature extraction.
 
 ## Scientific limitations
 

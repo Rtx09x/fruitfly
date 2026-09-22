@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import threading
+import time
 import webbrowser
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -41,8 +42,18 @@ def main():
             except ValueError: return self._json({"error": "invalid JSON"}, 400)
             if self.path == "/api/stimulus":
                 with sim.lock:
-                    for k in sim.stimulus:
+                    source = data.get("source", "manual")
+                    client = str(data.get("client_id", "legacy"))[:100]
+                    sequence_key = f"{client}:{source}"
+                    seq = int(data.get("sequence", sim.source_sequence.get(sequence_key, -1) + 1))
+                    if source not in {"manual", "camera", "audio"} or seq <= sim.source_sequence.get(sequence_key, -1):
+                        return self._json({"ok": False, "stale": True, "stimulus": sim.stimulus})
+                    sim.source_sequence[sequence_key] = seq
+                    allowed = {"manual": {"manual_left", "manual_right", "manual_loom"},
+                               "camera": {"camera_left", "camera_right"}, "audio": {"audio"}}
+                    for k in allowed[source]:
                         if k in data: sim.stimulus[k] = max(0.0, min(1.0, float(data[k])))
+                    if source in sim.device_updated: sim.device_updated[source] = time.monotonic()
                 return self._json({"ok": True, "stimulus": sim.stimulus})
             if self.path == "/api/pause":
                 sim.paused = bool(data.get("paused", not sim.paused)); return self._json({"paused": sim.paused})
@@ -51,6 +62,6 @@ def main():
     url = f"http://127.0.0.1:{args.port}"
     print(f"Fruitfly Connectome Lab: {url}")
     print(json.dumps({k: sim.manifest[k] for k in ("neurons", "edges", "unmapped_edges",
-                                                    "motion_inputs", "object_inputs", "motor_outputs")}, indent=2))
+                                                    "motion_inputs", "object_inputs", "auditory_inputs", "motor_outputs")}, indent=2))
     if not args.no_browser: threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()

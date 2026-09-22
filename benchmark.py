@@ -17,7 +17,7 @@ def trial(stimulated=True, silenced=False, disconnected=False, steps=100):
     started = perf_counter()
     for tick in range(steps):
         if stimulated and tick >= 20:
-            sim.stimulus.update(motion_left=1.0, motion_right=.1)
+            sim.stimulus.update(manual_left=1.0, manual_right=.1)
         sim.step()
         state = sim.state()["motor"]
         left.append(state["left"]); right.append(state["right"])

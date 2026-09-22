@@ -1,24 +1,17 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fruitfly Connectome Lab</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="camera.css"></head>
-<body><main>
-  <header><div><p class="eyebrow">WHOLE-CONNECTOME SANDBOX</p><h1>Fruitfly <i>in silico</i></h1></div><div class="live" id="connection"><span></span> CONNECTING</div></header>
-  <section class="notice"><b>Interpretation boundary</b> This is an exploratory, simplified LIF simulation—not a digital animal or a validated behavioral model. Colors are computed activity. Fly motion comes from a labeled heuristic decoder of efferent activity.</section>
-  <div class="grid">
-    <section class="panel brain"><div class="panelhead"><div><p>CONNECTOME ACTIVITY</p><h2 id="count">Loading dataset…</h2></div><div class="stats"><b id="hz">— Hz</b><small>SIM RATE</small></div></div>
-      <canvas id="brain" width="900" height="520"></canvas><div class="legend"><span>QUIET</span><i></i><span>ACTIVE</span> · 900 stable sampled neurons at real normalized x/y coordinates</div>
-    </section>
-    <section class="panel arena"><div class="panelhead"><div><p>HEURISTIC MOTOR DECODER</p><h2>Fly arena</h2></div><div class="stats"><b id="tick">0</b><small>TICK</small></div></div>
-      <canvas id="arena" width="650" height="420"></canvas>
-      <div class="meters"><label>LEFT EFFERENT RATE (spikes/s) <progress id="left" max=".2"></progress></label><label>RIGHT EFFERENT RATE (spikes/s) <progress id="right" max=".2"></progress></label></div>
-    </section>
-    <section class="panel controls"><div class="panelhead"><div><p>SENSORY ADAPTERS</p><h2>Inject current</h2></div><button id="pause">Pause</button></div>
-      <label>Left visual motion <output id="ol">0.00</output><input id="motion_left" type="range" min="0" max="1" step=".01" value="0"></label>
-      <label>Right visual motion <output id="or">0.00</output><input id="motion_right" type="range" min="0" max="1" step=".01" value="0"></label>
-      <label>Loom / object channels <output id="oo">0.00</output><input id="loom" type="range" min="0" max="1" step=".01" value="0"></label>
-      <div class="presets"><button data-preset="left">Sweep left</button><button data-preset="right">Sweep right</button><button data-preset="loom">Loom</button><button data-preset="clear">Clear</button></div>
-      <div class="camera"><button id="camera">Enable webcam motion</button><span id="cameraStatus">off</span><video id="video" playsinline muted></video><canvas id="cameraCanvas" width="64" height="36"></canvas></div>
-      <p class="fine">Mapping uses dataset annotations (“Motion” and “Object”), but the injected current magnitude and bilateral mapping are modeling assumptions.</p>
-    </section>
-    <section class="panel provenance"><p>DATA STATUS</p><div id="facts"></div><p id="timing" class="fine"></p><details><summary>What is—and is not—modeled</summary><p>All available neurons and edges are loaded. Synapse count sets edge magnitude; transmitter labels set an assumed sign. The model omits morphology, delays, gap junctions, receptor types, plasticity, muscles and biomechanics. Do not infer emotions, intent, or circuit function from activity.</p></details></section>
-  </div>
-</main><script src="app.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fruitfly Connectome Lab</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="experience.css"></head>
+<body><main><header><div><p class="eyebrow">REAL BRAIN WIRING • SIMPLIFIED SIMULATION</p><h1>Fruitfly <i>in silico</i></h1></div><div class="live" id="connection"><span></span> CONNECTING</div></header>
+<section class="intro"><h2>Move your hand. Make a sound. Watch the network respond.</h2><p>Your movement and sound stimulate the model. Watch brain activity and the fly response. The fly moves only when the simulated network produces motor output.</p></section>
+<section class="hero">
+  <article class="panel camera-stage"><div class="panelhead"><div><p>01 · INPUT SIGNAL</p><h2>Camera + microphone</h2></div></div>
+    <div class="video-wrap"><video id="video" playsinline muted></video><div class="video-empty">Your camera preview appears here</div><canvas id="cameraCanvas" width="64" height="36"></canvas></div>
+    <div class="actions"><button class="primary" id="camera">Start camera</button><span id="cameraStatus">off</span><button class="primary" id="microphone">Start microphone</button><span id="microphoneStatus">off</span></div>
+    <div class="signal-grid"><label>LEFT MOTION <progress id="cameraLeft" max="1"></progress></label><label>RIGHT MOTION <progress id="cameraRight" max="1"></progress></label><label>MIC LEVEL <progress id="audioLevel" max="1"></progress></label><label>SIGNAL CHANGE <progress id="audioZcr" max="1"></progress></label></div>
+    <p class="fine">Processed locally. No recording or upload. These are experimental inputs, not a reproduction of fly vision or hearing.</p>
+  </article>
+  <article class="panel arena"><div class="panelhead"><div><p>03 · NEURAL MOTOR OUTPUT</p><h2>Fly arena</h2></div><div class="stats"><b id="tick">0</b><small>TICK</small></div></div><canvas id="arena" width="650" height="420"></canvas><div id="experienceStatus" class="experience-status">Starting simulation…</div><div class="meters"><label>LEFT EFFERENT (spikes/s)<progress id="left" max=".2"></progress></label><label>RIGHT EFFERENT (spikes/s)<progress id="right" max=".2"></progress></label></div></article>
+</section>
+<section class="panel brain"><div class="panelhead"><div><p>02 · SIMULATED NEURAL ACTIVITY</p><h2 id="count">Loading dataset…</h2></div><div class="stats"><b id="hz">— steps/s</b><small>COMPUTE SPEED</small></div></div><canvas id="brain" width="900" height="520"></canvas><div class="legend"><span>QUIET</span><i></i><span>ACTIVE</span> · 900 stable sampled neurons at real normalized x/y coordinates</div><p id="timing" class="timing"></p></section>
+<section class="lower">
+  <article class="panel controls"><div class="panelhead"><div><p>MANUAL INPUTS</p><h2>Experiment without devices</h2></div><button id="pause">Pause</button></div><label>Left visual motion <output id="ol">0.00</output><input id="motion_left" type="range" min="0" max="1" step=".01" value="0"></label><label>Right visual motion <output id="or">0.00</output><input id="motion_right" type="range" min="0" max="1" step=".01" value="0"></label><label>Loom / object channels <output id="oo">0.00</output><input id="loom" type="range" min="0" max="1" step=".01" value="0"></label><div class="presets"><button data-preset="left">Sweep left</button><button data-preset="right">Sweep right</button><button data-preset="loom">Loom</button><button data-preset="clear">Clear</button></div></article>
+  <article class="panel provenance"><p>ABOUT THE MODEL</p><details><summary>Data, counts, and scientific limits</summary><div id="facts"></div><p>All available neurons and edges are loaded. Synapse count sets magnitude; transmitter labels set an assumed sign. The model omits morphology, delays, gap junctions, receptor types, plasticity, muscles and biomechanics. Connectivity constrains signal flow but does not prove function, emotion, intent, or thought.</p></details></article>
+</section></main><script src="media_features.js"></script><script src="app.js"></script></body></html>
