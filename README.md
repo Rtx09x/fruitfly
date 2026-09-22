@@ -6,6 +6,18 @@ An honest, local buildathon demo that runs a simplified leaky integrate-and-fire
 
 Requires Python 3.10+ and NumPy. The first launch streams the compressed CSVs into a ~68 MB memory-mapped cache and takes about 30 seconds on the reference laptop; later launches reuse it only when source SHA-256 fingerprints match.
 
+### Fresh Mac checkout (before the PR is merged)
+
+Install Python 3.10 or newer first, then copy and run exactly:
+
+```sh
+git clone -b codex/buildathon-demo https://github.com/Rtx09x/fruitfly.git
+cd fruitfly
+sh run_mac.sh
+```
+
+`run_mac.sh` creates an isolated `.venv`, installs NumPy, builds the local cache from the dataset already tracked in this branch, starts the simulator, and opens <http://127.0.0.1:8765>. The first dependency install and cache build may take a few minutes; later launches are faster. If `python3` is not the desired interpreter, run `FRUITFLY_PYTHON=/full/path/to/python3 sh run_mac.sh`.
+
 **Windows**
 
 ```bat
@@ -20,6 +32,21 @@ chmod +x run_mac.sh
 ```
 
 Or: `python -m pip install -r requirements.txt && python run.py`. Open <http://127.0.0.1:8765>. Use `--data /path/to/fruit_fly_brain_dataset`, `--port 9000`, `--no-browser`, or `--rebuild` as needed.
+
+## Using the demo
+
+The main screen deliberately puts the two immediate interactions first: a large camera/microphone input panel and the animated fly arena. Click **Start camera**, allow camera access, then move a hand across either side of the preview. Click **Start microphone**, allow microphone access, then make a sound. Signal meters confirm local input detection. Neural activity and the fly can respond slowly because this laptop runs the model below biological real time; the yellow timing message reports the actual slowdown. The status distinguishes waiting, detected input with no motor response yet, and computed motor output.
+
+Camera and microphone are independently optional. Manual Sweep/Loom controls below the activity view exercise the same simulation without hardware permissions. Stopping either device releases its tracks/context and clears only that source's current. Closing or refreshing the page also clears device signals through cleanup plus a server-side timeout.
+
+## Troubleshooting
+
+- **Python not found:** install Python 3.10+ and use the `FRUITFLY_PYTHON` override shown above.
+- **Missing dataset:** the clone should contain `fruit_fly_brain_dataset/*.csv.gz`. If it does not, confirm you cloned `codex/buildathon-demo` rather than the current default branch.
+- **Camera or microphone unavailable/denied:** enable localhost permissions in the browser, ensure no other app owns the device, and press Start again. The error appears beside the relevant button. Manual inputs remain usable.
+- **Page says backend disconnected:** leave the terminal running and reload <http://127.0.0.1:8765>. If the port is occupied, use `python run.py --port 9000` inside `.venv` and open that port.
+- **Cache error after data changes:** stop the server and run `python run.py --rebuild` inside `.venv`.
+- **Slow response:** expected on modest hardware. Watch the real-time factor; input is live, while network propagation advances at the displayed simulation rate.
 
 ## What actually runs
 
@@ -57,3 +84,5 @@ Run `python -m unittest discover -s tests -v` for structural, stepping, input-mi
 This is a visualization sandbox, not a digital fly. It does not model morphology, compartmental dynamics, gap junctions, neuromodulation, receptor identity, plasticity, internal state, muscles, biomechanics, learning, emotions, intent, or thought. Connectivity constrains possible signal flow; it does not establish a neuron's function. Baseline activity and stimulus current are modeling choices. A glowing neuron is not evidence of a mental state or a validated circuit.
 
 The reference paper used FlyWire public materialization v630, 127,400 proofread neurons, alpha-synapse dynamics, calibrated electrophysiological parameters, and specific experimentally grounded sensory populations. This demo's local table has 139,255 neurons and appears to be from a later release, so direct comparison of output values would be inappropriate.
+
+The code and UI were tested on Windows. The Mac launcher and browser permission flows are implemented but were not exercised on physical Mac hardware. Deterministic camera-frame and audio-sample feature tests pass, but no claim is made that a particular friend's camera/microphone hardware has been verified.
